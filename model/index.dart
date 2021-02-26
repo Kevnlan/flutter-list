@@ -13,69 +13,78 @@ class _IndexState extends State<Index> {
   bool loading;
   String name;
 
-  Future<String> _fetchData() async {
+  Future<ProspectList> _fetchDatas() async {
     setState(() => loading = true);
 
     final response = await http.get('run.mocky.io/v3/ad6092cd-3b2d-4b62-92f1-4198f697f3d3');
     if (response.statusCode == 200) {
-      var datas;
-      datas = jsonDecode(response.body);
+      final datas = jsonDecode(response.body);
       final prospectListFromJson = ProspectList.fromJson(datas);
-
-      print(response.body);
-
-      setState(() {
-        prospectList = prospectListFromJson;
-        loading = false;
-      });
+      return prospectListFromJson;
     } else {
       print(response.statusCode);
+      return null;
     }
   }
 
   @override
   void initState() {
     super.initState();
-    _fetchData();
+  }
+
+  Widget prospectData() {
+    return FutureBuilder(
+        future: _fetchDatas(),
+        builder: (BuildContext context, AsyncSnapshot<ProspectList> snapshot) {
+          if (snapshot.hasData) {
+            prospectList = snapshot.data;
+            if (prospectList != null) {
+              return ListView.separated(
+                separatorBuilder: (context, index) => Divider(
+                  height: 1,
+                  color: Colors.black87,
+                ),
+                itemCount: prospectList.data.length,
+                itemBuilder: (context, i) {
+                  final x = prospectList.data[i];
+                  return ListTile(
+                    title: Text(x.firstname),
+                    subtitle: Text(x.lastname),
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.green,
+                      child: Text(x.firstname[0],
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20.0,
+                          )),
+                    ),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => CustomerInfo())),
+                  );
+                },
+              );
+            } else {
+              // Show some error message...
+            }
+          } else if (snapshot.hasError) {
+            // Show some error message...
+          }
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        });
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<String> list = List.generate(10, (index) => "Text $index");
     return Scaffold(
-        appBar: AppBar(
-          title: Text("Prospect List"),
-          centerTitle: true,
-        ),
-        body: Container(
-            child: loading
-                ? Center(child: CircularProgressIndicator())
-                : ListView.separated(
-                    separatorBuilder: (context, index) => Divider(
-                      height: 1,
-                      color: Colors.black87,
-                    ),
-                    itemCount: prospectList.data.length,
-                    itemBuilder: (context, i) {
-                      final x = prospectList.data[i];
-
-                      return ListTile(
-                        title: Text(x.firstname),
-                        subtitle: Text(x.lastname),
-                        leading: CircleAvatar(
-                          backgroundColor: Colors.green,
-                          child: Text(x.firstname[0],
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20.0,
-                              )),
-                        ),
-                        onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => CustomerInfo())),
-                      );
-                    },
-                  )));
+      appBar: AppBar(
+        title: Text("Prospect List"),
+        centerTitle: true,
+      ),
+      body: prospectData(),
+    );
   }
 }
