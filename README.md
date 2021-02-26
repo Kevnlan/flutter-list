@@ -1,2 +1,2 @@
 # flutter-list
-fetches nformation from an api and outputs it in a listview
+fetches data from a RESTful api and displays it in a listview
